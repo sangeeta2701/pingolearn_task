@@ -1,5 +1,7 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:pingolearn_task/Screens/home_screen.dart';
 import 'package:pingolearn_task/Screens/signup_screen.dart';
 import 'package:pingolearn_task/Widgets/sizedbox.dart';
@@ -17,18 +19,56 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-
-  TextEditingController usernameController = TextEditingController();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  String _errorMessage = '';
+  TextEditingController emailController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
+
+  void _loginMethod() async {
+    setState(() {
+      _errorMessage = '';
+    });
+
+    try {
+      await _auth.signInWithEmailAndPassword(
+        email: emailController.text,
+        password: passwordController.text,
+      );
+      Fluttertoast.showToast(msg: "Login Successful!!");
+      // ignore: use_build_context_synchronously
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => HomeScreen()),
+      );
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found' || e.code == 'wrong-password') {
+        setState(() {
+          _errorMessage = 'Invalid Credentials';
+          Fluttertoast.showToast(msg: _errorMessage);
+        });
+      } else {
+        setState(() {
+          _errorMessage = 'An error occurred. Please try again.';
+          Fluttertoast.showToast(msg: _errorMessage);
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'An error occurred. Please try again.';
+        Fluttertoast.showToast(msg: _errorMessage);
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: bgColor,
       body: SafeArea(
           child: SingleChildScrollView(
-            child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
-                    child: Form(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+          child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -39,23 +79,16 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 height150,
                 TextFormField(
-                  controller: usernameController,
+                  controller: emailController,
                   style: blackContentStyle,
-                  keyboardType: TextInputType.text,
-                  inputFormatters: [
-                    FilteringTextInputFormatter(RegExp(r'[a-zA-Z]+|\s'),
-                        allow: true)
-                  ],
-                  decoration: InputDecoration(hintText: "Username"),
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: InputDecoration(hintText: "Email"),
                   validator: (value) {
                     if (value!.isEmpty) {
-                      return "Please enter username";
-                    }
-                    if (value.length < 3) {
-                      return "Username can't be less than 3 characters";
-                    }
-                    if (value.length > 20) {
-                      return "Username can't be more  than 20 characters";
+                      return "Please Enter email";
+                    } else if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                        .hasMatch(value)) {
+                      return "Enter Correct email";
                     } else {
                       return null;
                     }
@@ -89,12 +122,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        customThemeButton("Login",(){
-                          if(_formKey.currentState!.validate()){
-                            Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (context) => HomeScreen()));
+                        customThemeButton("Login", () {
+                          if (_formKey.currentState!.validate()) {
+                            _loginMethod();
                           }
                         }),
                         Row(
@@ -109,7 +139,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                   Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                          builder: (context) => SignupScreen()));
+                                          builder: (context) =>
+                                              SignupScreen()));
                                 },
                                 child: Text(
                                   "Signup",
@@ -121,9 +152,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ],
             ),
-                    ),
-                  ),
-          )),
+          ),
+        ),
+      )),
     );
   }
 }

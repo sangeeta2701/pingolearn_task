@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:pingolearn_task/Widgets/sizedbox.dart';
-import 'package:pingolearn_task/model/newsListData.dart';
+import 'package:pingolearn_task/provider/news_provider.dart';
 import 'package:pingolearn_task/utils/colors.dart';
 import 'package:pingolearn_task/utils/constant.dart';
-import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,31 +15,33 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   // String API_KEY = "00a3bb0bad3c4dbbb7f644fde89befe2";
-  @override
-  void initState() {
-    super.initState();
-    _getNewsList();
-  }
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   _getNewsList();
+  // }
 
-  List<Article> newsList = [];
-  Future<void> _getNewsList() async {
-    final response = await http.get(
-      Uri.parse(
-          "https://newsapi.org/v2/everything?q=tesla&from=2024-06-17&sortBy=publishedAt&apiKey=00a3bb0bad3c4dbbb7f644fde89befe2"),
-    );
-    print(response.body);
-    print(response.statusCode);
-    if (response.statusCode == 200) {
-      var _news = newsListDataFromJson(response.body);
+  // List<Article> newsList = [];
+  // Future<void> _getNewsList() async {
+  //   final response = await http.get(
+  //     Uri.parse(
+  //         "https://newsapi.org/v2/everything?q=tesla&from=2024-06-17&sortBy=publishedAt&apiKey=00a3bb0bad3c4dbbb7f644fde89befe2"),
+  //   );
+  //   print(response.body);
+  //   print(response.statusCode);
+  //   if (response.statusCode == 200) {
+  //     var _news = newsListDataFromJson(response.body);
 
-      setState(() {
-        newsList = _news.articles;
-      });
-    }
-  }
+  //     setState(() {
+  //       newsList = _news.articles;
+  //     });
+  //   }
+  // }
+  
 
   @override
   Widget build(BuildContext context) {
+    final newsProvider = Provider.of<NewsProvider>(context);
     return Scaffold(
       backgroundColor: bgColor,
       appBar: AppBar(
@@ -77,9 +79,10 @@ class _HomeScreenState extends State<HomeScreen> {
               height12,
               SizedBox(
                 height: MediaQuery.of(context).size.height,
-                child:newsList.isEmpty?Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation(themeColor),),): ListView.builder(
-                    itemCount: 6,
+                child:newsProvider.items.isEmpty?Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation(themeColor),),): ListView.builder(
+                    itemCount: newsProvider.items.length,
                     itemBuilder: (context, index) {
+                      final news = newsProvider.items[index];
                       return Container(
                         decoration: BoxDecoration(
                           color: wColor,
@@ -95,13 +98,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        newsList[index].title,
+                                        news.articles[index].title,
                                         style: blackHeadingStyle,
                                         maxLines: 1,
                                       ),
                                       height4,
                                       Text(
-                                        newsList[index].content,
+                                        news.articles[index].content,
                                         style: blackContentStyle,
                                         maxLines: 3,
                                       )
@@ -117,7 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       minWidth: 80),
                                   decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(8),
-                                      image: DecorationImage(image: NetworkImage(newsList[index].urlToImage!),fit: BoxFit.cover)),
+                                      image: DecorationImage(image:news.articles[index].urlToImage!.isEmpty?NetworkImage("https://static.vecteezy.com/system/resources/previews/001/234/420/non_2x/breaking-news-on-mesh-background-vector.jpg"): NetworkImage(news.articles[index].urlToImage!),fit: BoxFit.cover)),
                                 ),
                               ]),
                         ),
